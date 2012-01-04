@@ -1,0 +1,26 @@
+
+http://stackoverflow.com/questions/7249499/videojs-fullscreen-and-fancybox
+
+
+
+// Turn on fullscreen (window) mode
+    // Real fullscreen isn't available in browsers quite yet.
+    enterFullScreen: function () {
+        if (this.supportsFullScreen()) {
+            this.html5EnterNativeFullScreen();
+        } else {
+            this.enterFullWindow();
+        }
+        // Hide fancybox close button
+        $("#fancybox-close").hide();
+    },
+
+    exitFullScreen: function () {
+        if (this.supportsFullScreen()) {
+            // Shouldn't be called
+        } else {
+            this.exitFullWindow();
+        }
+        // Show fancybox close button
+        $("#fancybox-close").show();
+    },

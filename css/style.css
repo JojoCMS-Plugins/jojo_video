@@ -1,0 +1,20 @@
+.video_popup {
+  display: block;
+  width: 608px;
+  height: 304px;
+  width: 912px;
+  height: 456px;
+  background: #fff;
+  padding: 0;
+  text-align: center;
+}
+
+.video_popup2 .close {
+	background-image:url(../images/popup-close.png);
+	position:absolute;
+	right:-15px;
+	top:-15px;
+	cursor:pointer;
+	height:35px;
+	width:35px;
+}
