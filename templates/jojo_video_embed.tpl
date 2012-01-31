@@ -9,20 +9,20 @@
     <object class="vjs-flash-fallback" width="{$video_width}" height="{$video_height}" type="application/x-shockwave-flash" data="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf">
       <param name="movie" value="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf" />
       <param name="allowfullscreen" value="true" />
+      <param name="WMODE" value="transparent"> 
       <param name="flashvars" value='config={ldelim}"playlist":["{$SITEURL}/images/{$video_width}x{$video_height}/videos/{$video.screenshot|default:'default.jpg'}", {ldelim}"url": "{$SITEURL}/video/{$video.mp4}","autoPlay":false,"autoBuffering":true{rdelim}]{rdelim}' />
       <!-- Image Fallback. Typically the same as the poster image. -->
       <img src="{$SITEURL}/images/{$video_width}x{$video_height}/videos/{$video.screenshot|default:'default.jpg'}" width="{$video_width}" height="{$video_height}" alt="Poster Image" title="No video playback capabilities." />
     </object>
   </video>
+  
+  {*
   <!-- Download links provided for devices that can't play video in the browser. -->
   <p class="vjs-no-video"><strong>Download Video:</strong>
     {if $video.mp4}<a href="{$SITEURL}/video/{$video.mp4}">MP4</a>{/if}
     {if $video.ogv}<a href="{$SITEURL}/video/{$video.mp4}">Ogg</a>{/if}
     {if $video.webm}<a href="{$SITEURL}/video/{$video.mp4}">WebM</a>{/if}
-    {*
-    <!-- Support VideoJS by keeping this link. -->
-    <a href="http://videojs.com">HTML5 Video Player</a> by VideoJS
-    *}
   </p>
+  *}
 </div>
 <!-- End VideoJS -->
