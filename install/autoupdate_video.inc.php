@@ -59,12 +59,44 @@ $default_fd['video']['caption'] = array(
     
 // source Field
 $default_fd['video']['source'] = array(
-        'fd_name' => "Source",
+        'fd_name' => "Source upload",
         'fd_type' => "fileupload",
         'fd_required' => "no",
         'fd_readonly' => "0",
         'fd_size' => "50",
-        'fd_help' => "",
+        'fd_help' => "Upload a source file to be converted to MP4, OGV, WebM (if your server supports this functionality)",
+        'fd_order' => $o++,
+    );
+
+// mp4 Upload field
+$default_fd['video']['mp4_upload'] = array(
+        'fd_name' => "MP4 Upload",
+        'fd_type' => "fileupload",
+        'fd_required' => "no",
+        'fd_readonly' => "0",
+        'fd_size' => "50",
+        'fd_help' => "Manually upload a MP4 format video",
+        'fd_order' => $o++,
+    );   
+// ogv Upload field
+$default_fd['video']['ogv_upload'] = array(
+        'fd_name' => "OGV Upload",
+        'fd_type' => "fileupload",
+        'fd_required' => "no",
+        'fd_readonly' => "0",
+        'fd_size' => "50",
+        'fd_help' => "Manually upload an OGV format video",
+        'fd_order' => $o++,
+    );
+    
+// webm Upload field
+$default_fd['video']['webm_upload'] = array(
+        'fd_name' => "WebM Upload",
+        'fd_type' => "fileupload",
+        'fd_required' => "no",
+        'fd_readonly' => "0",
+        'fd_size' => "50",
+        'fd_help' => "Manually upload a WEBM format video",
         'fd_order' => $o++,
     );
     

@@ -6,38 +6,65 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
     {
         if (!$id) return false;
         $video = Jojo::selectRow("SELECT * FROM {video} WHERE videoid=?", $id);
-        if (empty($video['videoid']) || empty($video['source'])) return false;
-        //$cached = array('mp4' => false, 'ogv' => false, 'webm' => false);
-        $cached = array('mp4' => false, 'ogv' => false);
-        $source_md5 = md5_file(_DOWNLOADDIR.'/videos/'.$video['source']);
-        echo $source_md5;
-        $base_name = self::removeExtension($video['source']);
+        if (empty($video['videoid'])) return false;
         
-        if (Jojo::fileExists(self::cacheDir().'/'.$base_name.'.md5')) {
-            $cache_md5 = file_get_contents(self::cacheDir().'/'.$base_name.'.md5');
-        } else {
-            $cache_md5 = false;
-        }
-        foreach ($cached as $ext => &$filename) {
-            if (Jojo::fileExists(self::cacheDir().'/'.$base_name.'.'.$ext) && ($cache_md5 == $source_md5)) continue;
-            $temp = Jojo::selectRow("SELECT * FROM {videoqueue} WHERE source=? AND format=?");
-            if (!empty($temp['videoqueueid'])) continue; //don't add a video to the conversion queue twice 
-            Jojo::insertQuery("INSERT INTO {videoqueue} SET source=?, format=?, started=0", array(_DOWNLOADDIR.'/videos/'.$video['source'], $ext));
-        }
-        file_put_contents(self::cacheDir().'/'.$base_name.'.md5', $source_md5);
-        
-        if (empty($video['screenshot'])) {
-            $screenshot = self::screenshot(_DOWNLOADDIR.'/videos/'.$video['source']);
-            echo "\n".'ss='. $screenshot,"\n\n";
-            if (!empty($screenshot)) {
-                copy($screenshot, _DOWNLOADDIR.'/videos/'.$base_name.'.jpg');
-                unlink($screenshot);
-                if (Jojo::fileExists(_DOWNLOADDIR.'/videos/'.$base_name.'.jpg')) {
-                    $video['screenshot'] = $base_name.'.jpg';
-                    Jojo::updateQuery("UPDATE {video} SET screenshot=? WHERE videoid=?", array($base_name.'.jpg', $video['videoid']));
+        /* handle conversions from single source */
+        if (!empty($video['source'])) {
+            //$cached = array('mp4' => false, 'ogv' => false, 'webm' => false);
+            $cached = array('mp4' => false, 'ogv' => false);
+            $source_md5 = md5_file(_DOWNLOADDIR.'/videos/'.$video['source']);
+            //echo $source_md5;
+            $base_name = self::removeExtension($video['source']);
+            
+            if (Jojo::fileExists(self::cacheDir().'/'.$base_name.'.md5')) {
+                $cache_md5 = file_get_contents(self::cacheDir().'/'.$base_name.'.md5');
+            } else {
+                $cache_md5 = false;
+            }
+            foreach ($cached as $ext => &$filename) {
+                if (Jojo::fileExists(self::cacheDir().'/'.$base_name.'.'.$ext) && ($cache_md5 == $source_md5)) continue;
+                $temp = Jojo::selectRow("SELECT * FROM {videoqueue} WHERE source=? AND format=?");
+                if (!empty($temp['videoqueueid'])) continue; //don't add a video to the conversion queue twice 
+                Jojo::insertQuery("INSERT INTO {videoqueue} SET source=?, format=?, started=0", array(_DOWNLOADDIR.'/videos/'.$video['source'], $ext));
+            }
+            file_put_contents(self::cacheDir().'/'.$base_name.'.md5', $source_md5);
+            
+            if (empty($video['screenshot'])) {
+                $screenshot = self::screenshot(_DOWNLOADDIR.'/videos/'.$video['source']);
+                echo "\n".'ss='. $screenshot,"\n\n";
+                if (!empty($screenshot)) {
+                    copy($screenshot, _DOWNLOADDIR.'/videos/'.$base_name.'.jpg');
+                    unlink($screenshot);
+                    if (Jojo::fileExists(_DOWNLOADDIR.'/videos/'.$base_name.'.jpg')) {
+                        $video['screenshot'] = $base_name.'.jpg';
+                        Jojo::updateQuery("UPDATE {video} SET screenshot=? WHERE videoid=?", array($base_name.'.jpg', $video['videoid']));
+                    }
                 }
             }
         }
+        
+        /* handle manually uploaded videos */
+        $formats = array('mp4', 'ogv', 'webm');
+        foreach ($formats as $format) {
+            if (!empty($video[$format.'_upload']) && Jojo::fileExists(_DOWNLOADDIR.'/videos/'.$video[$format.'_upload'])) {
+                if (strtolower(Jojo::getFileExtension($video[$format.'_upload'])) != $format) {
+                    //TODO: raise error about being the wrong file extension
+                    unlink(_DOWNLOADDIR.'/videos/'.$video[$format.'_upload']); //delete the uploaded file
+                    Jojo::updateQuery("UPDATE {video} SET ".$format."_upload='' WHERE videoid=?", array($video['videoid'])); //clear the database field
+                    continue;
+                }
+                
+                //move the vid to cache
+                rename(_DOWNLOADDIR.'/videos/'.$video[$format.'_upload'], self::cacheDir().'/'.$video[$format.'_upload']);
+                
+                //clear the file upload field
+                Jojo::updateQuery("UPDATE {video} SET ".$format."_upload='', ".$format."=? WHERE videoid=?", array($video[$format.'_upload'], $video['videoid']));
+                
+                //remove the video from the conversion queue
+                if (!empty($video['source'])) Jojo::deleteQuery("DELETE FROM {videoqueue} WHERE source=? AND format=?", array($video['source'], $format));
+            }
+        }
+        
         //copy(_DOWNLOADDIR.'/videos/'.$video['screenshot'], self::cacheDir().'/'.$video['screenshot']);
         
         return true;
@@ -87,7 +114,7 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
     
     function cron()
     {
-        Jojo::updateQuery("UPDATE {videoqueue} SET started=0 WHERE started < ?", strtotime('-60 minute')); //any videos that haven't completed in this timeframe get requeued
+        Jojo::updateQuery("UPDATE {videoqueue} SET started=0 WHERE started < ?", strtotime('-60 minute')); //any videos that haven't completed in 60 mins get requeued
         $queue = Jojo::selectRow("SELECT * FROM {videoqueue} WHERE started=0 LIMIT 1");
         if (empty($queue['source'])) return false;
         
@@ -103,7 +130,6 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
     }
     
     function test() {
-        //self::convert(_DOWNLOADDIR.'/videos/024_babymiracle.mp4', self::cacheDir().'/024_babymiracle.ogv');
         echo self::screenshot(_DOWNLOADDIR.'/videos/024_babymiracle.mp4');
     }
     
@@ -151,9 +177,6 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
             $command = self::ffmpegPath() . " -i " . $input . " -acodec copy -f ".$ext." -s " . $w . "x" . $h . " " . $temp;
             
         }
-        
-        //echo $command.'<br />';
-        //echo $code."<br />";
         self::runExternal( $command, &$code );
         if ($code) {
             //echo "Error - resizing ".$input.' to '.$s.' size.<br />'."\n";
