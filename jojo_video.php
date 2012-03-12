@@ -21,6 +21,12 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
             } else {
                 $cache_md5 = false;
             }
+            
+            /* copy source to cache folder if it's a FLV, and copy MP$ files across directly */
+            if ((Jojo::getFileExtension($video['source']) == 'flv') || (Jojo::getFileExtension($video['source']) == 'mp4')) {
+                copy(_DOWNLOADDIR.'/videos/'.$video['source'], self::cacheDir().'/'.$video['source']);
+            }
+            
             foreach ($cached as $ext => &$filename) {
                 if (Jojo::fileExists(self::cacheDir().'/'.$base_name.'.'.$ext) && ($cache_md5 == $source_md5)) continue;
                 $temp = Jojo::selectRow("SELECT * FROM {videoqueue} WHERE source=? AND format=?");
@@ -72,8 +78,6 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
     
     function getPopupHtml($videoid, $width=false, $height=false) {
         global $smarty;
-        //$embed = self::getEmbedHtml($videoid, $width, $height);
-        //$embed = self::getEmbedHtml($videoid, 608, 304);
         $embed = self::getEmbedHtml($videoid, 912, 456); 
         $smarty->assign('embed', $embed);
         $smarty->assign('video_id', mt_rand(1000,9999));
@@ -83,10 +87,24 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
         return $html;
     }
     
+    function getPopupButtonHtml($videoid, $video_popup_button='images/video_popup_button.gif') {
+        global $smarty;
+        $embed = self::getEmbedHtml($videoid, 912, 456); 
+        $smarty->assign('embed', $embed);
+        $smarty->assign('video_id', mt_rand(1000,9999));
+        $smarty->assign('video_width', $width);
+        $smarty->assign('video_height', $height);
+        $smarty->assign('video_popup_button', $video_popup_button);
+        $html = $smarty->fetch('jojo_video_popup_button.tpl');
+        return $html;
+    }
+    
     function getEmbedHtml($videoid, $width=false, $height=false) {
         global $smarty;
-        $video = Jojo::selectRow("SELECT * FROM {video} WHERE videoid=?", $videoid);
+        //$video = Jojo::selectRow("SELECT * FROM {video} WHERE videoid=?", $videoid);
+        $video = self::getEmbedData($videoid);
         if (empty($video['videoid'])) return '';//can't find anything by that ID
+
         $smarty->assign('video_width', $width);
         $smarty->assign('video_height', $height);
         $smarty->assign('video', $video);
@@ -97,6 +115,13 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
     function getEmbedData($videoid) {
         $video = Jojo::selectRow("SELECT * FROM {video} WHERE videoid=?", $videoid);
         if (empty($video['videoid'])) return false;
+        
+        /* display the FLV for flash fallback, if source is a FLV */
+        if (!empty($video['source']) && Jojo::getFileExtension($video['source']) == 'flv') {
+            $video['flv'] = $video['source'];
+        } else {
+            $video['flv'] = '';
+        }
         
         return $video;
     }
@@ -175,11 +200,13 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
         } else {
             //$command = self::ffmpegPath() . " -i " . $input . " -ar 44100 -f ".$ext." -s " . $w . "x" . $h . " " . $temp;
             $command = self::ffmpegPath() . " -i " . $input . " -acodec copy -f ".$ext." -s " . $w . "x" . $h . " " . $temp;
+            //$command = self::ffmpegPath() . " -i " . $input . " -acodec copy -f ".$ext." " . $temp;
             
         }
         self::runExternal( $command, &$code );
         if ($code) {
             //echo "Error - resizing ".$input.' to '.$s.' size.<br />'."\n";
+            echo $command;
             return false;
         } else {
             rename($temp, $output);
