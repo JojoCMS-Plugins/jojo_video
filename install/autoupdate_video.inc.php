@@ -28,7 +28,7 @@ $o = -1;
 // ID Field
 $default_fd['video']['videoid'] = array(
         'fd_name' => "ID",
-        'fd_type' => "hidden",
+        'fd_type' => "readonly",
         'fd_readonly' => "0",
         'fd_help' => "A unique ID, automatically assigned by the system",
         'fd_order' => $o++,
@@ -143,7 +143,16 @@ $default_fd['video']['screenshot'] = array(
         'fd_help' => "",
         'fd_order' => $o++,
     );
-    
+
+// embedcode Field
+$default_fd['video']['embedcode'] = array(
+        'fd_name' => "Embed code",
+        'fd_type' => "videoembedcode",
+        'fd_required' => "no",
+        'fd_help' => "Copy-paste one of these codes into the page editor to embed this video",
+        'fd_order' => $o++,
+    );
+
 // displayorder Field
 $default_fd['video']['displayorder'] = array(
         'fd_name' => "Display Order",

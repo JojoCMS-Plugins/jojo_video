@@ -32,6 +32,7 @@ $query = "
         `webm` varchar(255) NOT NULL default '',
         `screenshot` varchar(255) NOT NULL default '',
         `displayorder` int(11) NOT NULL default '999',
+        `embedcode` varchar(255) NOT NULL default '',
          PRIMARY KEY  (`videoid`)
          );";
 

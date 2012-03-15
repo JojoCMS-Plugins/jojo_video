@@ -349,7 +349,31 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
         $code= proc_close($process);
         
         return $output;
-}
+    }
+    
+    public static function content($content)
+    {
+        global $smarty;
+
+        /* Find all [[video: ID]] tags */
+        preg_match_all('/\[\[video: ?([0-9]*) ?\]\]/', $content, $matches);
+        foreach($matches[1] as $id => $videoid) {
+            $embed = self::getEmbedHtml($videoid, 290, 160);
+            if (!$embed) continue;
+            $embed = '<div class="video_embed_wrap">'.$embed.'</div>';
+            $content = str_replace($matches[0][$id], $embed, $content);
+        }
+        
+        /* Find all [[video popup: ID]] tags */
+        preg_match_all('/\[\[video ?popup: ?([0-9]*) ?\]\]/', $content, $matches);
+        foreach($matches[1] as $id => $videoid) {
+            $embed = self::getPopupHtml($videoid, 290, 160);
+            if (!$embed) continue;
+            $embed = '<div class="video_embed_popup_wrap">'.$embed.'</div>';
+            $content = str_replace($matches[0][$id], $embed, $content);
+        }
+        return $content;
+    }
     
 
 }
