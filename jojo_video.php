@@ -31,7 +31,9 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
                 if (Jojo::fileExists(self::cacheDir().'/'.$base_name.'.'.$ext) && ($cache_md5 == $source_md5)) continue;
                 $temp = Jojo::selectRow("SELECT * FROM {videoqueue} WHERE source=? AND format=?");
                 if (!empty($temp['videoqueueid'])) continue; //don't add a video to the conversion queue twice 
-                Jojo::insertQuery("INSERT INTO {videoqueue} SET source=?, format=?, started=0", array(_DOWNLOADDIR.'/videos/'.$video['source'], $ext));
+                if (Jojo::getOption('video_conversion', 'manual') == 'ffmpeg') {
+                    Jojo::insertQuery("INSERT INTO {videoqueue} SET source=?, format=?, started=0", array(_DOWNLOADDIR.'/videos/'.$video['source'], $ext));
+                }
             }
             file_put_contents(self::cacheDir().'/'.$base_name.'.md5', $source_md5);
             
@@ -139,17 +141,19 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
     
     function cron()
     {
-        Jojo::updateQuery("UPDATE {videoqueue} SET started=0 WHERE started < ?", strtotime('-60 minute')); //any videos that haven't completed in 60 mins get requeued
-        $queue = Jojo::selectRow("SELECT * FROM {videoqueue} WHERE started=0 LIMIT 1");
-        if (empty($queue['source'])) return false;
-        
-        //begin processing
-        Jojo::updateQuery("UPDATE {videoqueue} SET started=? WHERE videoqueueid=?", array(time(), $queue['videoqueueid']));
-        $res = self::convert($queue['source'], self::cacheDir().'/'.self::removeExtension(basename($queue['source'])).'.'.$queue['format']);
-        if ($res) {
-            Jojo::deleteQuery("DELETE FROM {videoqueue} WHERE source=? AND format=?", array($queue['source'], $queue['format']));
-            Jojo::updateQuery("UPDATE {video} SET ".$queue['format']."=? WHERE source=?", array(self::removeExtension(basename($queue['source'])).'.'.$queue['format'], basename($queue['source'])));
-            //echo "UPDATE {video} SET ".$queue['format']."='".self::removeExtension(basename($queue['source'])).'.'.$queue['format']."' WHERE source='".$queue['source']."'";
+        if (Jojo::getOption('video_conversion', 'manual') == 'ffmpeg') {
+            Jojo::updateQuery("UPDATE {videoqueue} SET started=0 WHERE started < ?", strtotime('-60 minute')); //any videos that haven't completed in 60 mins get requeued
+            $queue = Jojo::selectRow("SELECT * FROM {videoqueue} WHERE started=0 LIMIT 1");
+            if (empty($queue['source'])) return false;
+            
+            //begin processing
+            Jojo::updateQuery("UPDATE {videoqueue} SET started=? WHERE videoqueueid=?", array(time(), $queue['videoqueueid']));
+            $res = self::convert($queue['source'], self::cacheDir().'/'.self::removeExtension(basename($queue['source'])).'.'.$queue['format']);
+            if ($res) {
+                Jojo::deleteQuery("DELETE FROM {videoqueue} WHERE source=? AND format=?", array($queue['source'], $queue['format']));
+                Jojo::updateQuery("UPDATE {video} SET ".$queue['format']."=? WHERE source=?", array(self::removeExtension(basename($queue['source'])).'.'.$queue['format'], basename($queue['source'])));
+                //echo "UPDATE {video} SET ".$queue['format']."='".self::removeExtension(basename($queue['source'])).'.'.$queue['format']."' WHERE source='".$queue['source']."'";
+            }
         }
         return true;
     }
