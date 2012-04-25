@@ -22,9 +22,10 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
                 $cache_md5 = false;
             }
             
-            /* copy source to cache folder if it's a FLV, and copy MP$ files across directly */
+            /* copy source to cache folder if it's a FLV, and copy MP4 files across directly */
             if ((Jojo::getFileExtension($video['source']) == 'flv') || (Jojo::getFileExtension($video['source']) == 'mp4')) {
                 copy(_DOWNLOADDIR.'/videos/'.$video['source'], self::cacheDir().'/'.$video['source']);
+                if (Jojo::getFileExtension($video['source']) == 'mp4') Jojo::updateQuery("UPDATE {video} SET mp4=? WHERE videoid=?", array($video['source'], $video['videoid']));
             }
             
             foreach ($cached as $ext => &$filename) {
@@ -148,7 +149,7 @@ class Jojo_Plugin_Jojo_video extends Jojo_Plugin
             
             //begin processing
             Jojo::updateQuery("UPDATE {videoqueue} SET started=? WHERE videoqueueid=?", array(time(), $queue['videoqueueid']));
-            $res = self::convert($queue['source'], self::cacheDir().'/'.self::removeExtension(basename($queue['source'])).'.'.$queue['format']);
+            $res = self::convert(_DOWNLOADDIR.'/videos/'.$queue['source'], self::cacheDir().'/'.self::removeExtension(basename($queue['source'])).'.'.$queue['format']);
             if ($res) {
                 Jojo::deleteQuery("DELETE FROM {videoqueue} WHERE source=? AND format=?", array($queue['source'], $queue['format']));
                 Jojo::updateQuery("UPDATE {video} SET ".$queue['format']."=? WHERE source=?", array(self::removeExtension(basename($queue['source'])).'.'.$queue['format'], basename($queue['source'])));
